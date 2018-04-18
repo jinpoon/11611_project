@@ -8,17 +8,22 @@ from nltk.tokenize import sent_tokenize
 from nltk.stem import *
 from collections import defaultdict
 import math
+import pdb
 stemmer = SnowballStemmer("english", ignore_stopwords=False)
 
 class SentencesRetriever():
+	
 	def __init__(self, article_filename):
 		self.sentence_list = []
+		self.lower2origin = {}
 		with io.open(article_filename, 'r', encoding='utf8') as f:
 			for line in f:
 				line = line.strip()
-				line = line.lower()
 				tmp_list = sent_tokenize(line)
-				self.sentence_list += tmp_list
+				for sentence in tmp_list:
+					self.lower2origin[sentence.lower()] = sentence
+					self.sentence_list.append(sentence.lower())
+				#self.sentence_list += tmp_list
 
 	'''
 		Retrieve the sentences using tf-idf
@@ -73,7 +78,11 @@ class SentencesRetriever():
 					tf = bow[stem]
 					stem_df = df[stem]
 					score += tf*max(math.log((N-stem_df+0.5)/(stem_df+0.5)), 0)
-			sentences_score[sentence2id[key]] = score
+			# lenth = 0
+			# for stem in bow:
+			# 	lenth += bow[stem]
+			# score = score/lenth
+			sentences_score[self.lower2origin[sentence2id[key]]] = score
 		sentences_score_list = [(sentences_score[k], k) for k in sentences_score]
 		sentences_score_list = sorted(sentences_score_list)
 		sentences_score_list = sentences_score_list[::-1]
@@ -106,7 +115,7 @@ class SentencesRetriever():
 if __name__ == '__main__':
 	filename = sys.argv[1] #any wiki articles (raw text)
 	word2vec_model = sys.argv[2] #words.txt.model
-	rtv = SentencesRetriever(filename)
-	sentences = rtv.retrieve_sentences("how far is delta leonis away from earth?")
-	print sentences 
-	print rtv.sort_vectorized_sentences(word2vec_model, sentences, "how far is delta leonis away from earth?")
+	# rtv = SentencesRetriever(filename)
+	# sentences = rtv.retrieve_sentences("how far is delta leonis away from earth?")
+	# print sentences 
+	# print rtv.sort_vectorized_sentences(word2vec_model, sentences, "how far is delta leonis away from earth?")
