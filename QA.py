@@ -13,6 +13,8 @@ import nltk
 import sys
 import copy
 from coreNLP_wrapper import StanfordNLP
+from QA_utils import *
+import pdb
 
 #os.environ['CLASSPATH'] = '/Users/jovi/Desktop/CMU/NLP/project/stanford-corenlp-full-2018-02-27'
 #os.environ['STANFORD_PARSER'] = '/Users/jovi/Desktop/CMU/NLP/project/stanford-parser-full-2015-12-09/stanford-parser.jar'
@@ -25,20 +27,30 @@ eps = 1e-10
 
 
 
+
+
+
 class QA():
     def __init__(self):
         self.sNLP = StanfordNLP()
         self.dropType = {}
+        self.typeNer = {}
+        self.typePro = {}
         self.initQstType()
         self.candidateAnswer = []
         self.candidateSentence = []
+        self.qgPipeline = QGPipeline() 
 
     def initQstType(self):
-        self.typeSet=['what', 'who', 'which', 'where']
+        self.typeSet=['what', 'who', 'which', 'where', 'when']
         self.dropType['who'] = ['NP']
+        self.dropType['when'] = ['PP']
         self.dropType['what'] = ['NP']
-        self.dropType['where'] = ['NP']
+        self.dropType['where'] = ['PP']
         self.auxWord = ['did','do','does', 'is', 'are','were','was']
+        self.typePro['where'] = ['in', 'at', 'on', 'behind', 'next']
+        self.typeNer['when'] = ['DATE']
+        self.typeNer['where'] = ['CITY','STATE_OR_PROVINCE','ORGANIZATION', 'LOCATION','COUNTRY']
 
 
     def qstType(self, qst):
@@ -71,47 +83,89 @@ class QA():
         return thisType, tokens
 
 
+
     def dropFragment(self,myParent,qstType):
         flag = 0
         
         for node in myParent:
             if isinstance(node, str): continue
-
-            #node.pretty_print()
-
             if self.dropTime > self.dropTotal:
                 return 
             if node.label() in self.dropType[qstType]:
-            
                 self.dropTime += 1
                 if self.dropTime > self.dropTotal:
                     myParent.remove(node)
                     self.candidateAnswer.append(node.leaves())
                     self.findFlag  = 1
                     return
-                
-                #if node.parent() is not None:  ### recursive to go in depth of the tree
             self.dropFragment(node,qstType)
             if node.label() == 'ROOT' and self.findFlag:
                 #print(node.leaves())
                 self.candidateSentence.append(node.leaves())
+
+
+    def findFragment(self,myParent,qstType):
+        for node in myParent:
+            if isinstance(node, str): continue
+            #node.pretty_print()
+            if node.label() in self.dropType[qstType]:
+                self.candidateAnswer.append((node.leaves(), node.label()))
+                
+            self.findFragment(node,qstType)
+
+
+
+    def answerSpecial(self, txtList, tokens, qstType):
+        #print(tokens[0])
+        self.candidateAnswer = []
+        self.finalAnswer = []
+        self.candidateSentence = []
+        for txt in txtList:
+            tree = self.sNLP.parser_sents([txt,])
+            for i in tree:
+                self.findFragment(i,qstType)
+        for i in self.candidateAnswer:
+            sentence = ' '.join(i[0])
+            pos_tag = self.sNLP.ner(sentence)
+            print(pos_tag)
+            #if pos_tag[0][0].lower() not in self.typePro[qstType]:
+            #    continue
+            if pos_tag[1][1] in self.typeNer[qstType]:
+                #print(pos_tag)
+                self.finalAnswer.append(sentence)
+        print(self.finalAnswer[0])
+
+
+
          
 
     def answer(self, txtList, qst):
-        #txt = txt.lower()
-        #qst = qst.lower()
-        #print(txt)
-        #print(qst)
+        #print('--------')
+        #txtList = [txtList[1]]
+        #print(txtList)
+        #print('--------')
         qstType, tokens = self.qstType(qst)
-        #print('-----')
-        #print(qst)
-        #print(qstType, tokens)
-       
+        if qstType in ['when', 'where']:
+            self.answerSpecial(txtList, tokens, qstType)
+            return
 
         self.candidateAnswer = []
         self.candidateSentence = []
 
-        for txt in txtList:
+        extendList = []
+
+        for thisSent in txtList:
+            extendList.append(thisSent)
+
+            thisParseTree = self.qgPipeline.getParseTree(thisSent)
+            no_conj_list = self.qgPipeline.splitConj(thisParseTree)            
+            simpl_sents = self.qgPipeline.simplify_sentence(no_conj_list)
+
+            for i in simpl_sents:
+                extendList.append(i)
+        #pdb.set_trace()
+
+        for txt in extendList:
             #print(txt)
             tree = self.sNLP.parser_sents([txt,])
             for i in tree:
@@ -126,6 +180,7 @@ class QA():
                         self.dropFlag = 0
                     self.dropTotal += 1 
 
+
         best_dis = 999999
         best_ans = None
         best_candi = None
@@ -138,12 +193,17 @@ class QA():
             #print(' '.join(nowSentence))
             score = self.edit_distance(nowSentence, tokens)
             best_candi = ' '.join(nowSentence)
+
+            #print(score)
+            #print(best_candi)
             if (score < best_dis):
                 best_dis = score
                 best_ans = ' '.join(self.candidateAnswer[i])
         #print("### sentence is:")
         #print(best_candi)
         #print("### answer is:")
+        #print('------------')
+        print(best_dis)
         print(best_ans)
 
 
@@ -167,6 +227,52 @@ class QA():
         return previous_row[-1]
 
 
+    def give_socre(self, txtList, qst):
+        txtList = [txtList]
+        qstType, tokens = self.qstType(qst)
+        self.candidateAnswer = []
+        self.candidateSentence = []
+        extendList = []
+
+        for thisSent in txtList:
+            extendList.append(thisSent)
+
+            thisParseTree = self.qgPipeline.getParseTree(thisSent)
+            no_conj_list = self.qgPipeline.splitConj(thisParseTree)            
+            simpl_sents = self.qgPipeline.simplify_sentence(no_conj_list)
+
+
+            for i in simpl_sents:
+                extendList.append(i)
+        print(extendList)
+
+        for txt in extendList:
+            #print(txt)
+            tree = self.sNLP.parser_sents([txt,])
+            for i in tree:
+                self.dropTotal = 0
+                self.dropFlag = 1
+                while self.dropFlag:
+                    self.findFlag = 0
+                    nowTree = copy.deepcopy(i)
+                    self.dropTime = 0
+                    nowTree = self.dropFragment(nowTree,qstType)
+                    if self.dropTime <= self.dropTotal:
+                        self.dropFlag = 0
+                    self.dropTotal += 1 
+        best_dis = 999999
+        best_ans = None
+        best_candi = None
+
+        for i in range(len(self.candidateSentence)):
+            nowSentence = self.candidateSentence[i]
+
+            score = self.edit_distance(nowSentence, tokens)
+            best_candi = ' '.join(nowSentence)
+            if (score < best_dis):
+                best_dis = score
+                best_ans = ' '.join(self.candidateAnswer[i])
+        return best_dis
 
 if __name__ == '__main__':
     QA = QA()
