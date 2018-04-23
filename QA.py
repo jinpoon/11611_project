@@ -60,7 +60,7 @@ class QA():
         if self.qstFlag:
             return
         for node in myParent:
-            node.pretty_print()
+            #node.pretty_print()
             if self.qstFlag:
                 return
             if isinstance(node, str): continue
@@ -164,6 +164,7 @@ class QA():
 
 
     def answer(self, txtList, qst):
+
         #print('--------')
         #txtList = [txtList[1]]
         #print(txtList)
@@ -210,6 +211,7 @@ class QA():
         best_dis = 0
         best_ans = None
         best_candi = None
+        best_sen = None
 
         for i in range(len(self.candidateSentence)):
             nowSentence = ' '.join(self.candidateSentence[i])
@@ -218,15 +220,21 @@ class QA():
             score = fuzz.partial_ratio(self.qstSim, nowSentence)
             #print(score)
             #print('----------')
-            if (score > best_dis):
+            this_ans = ' '.join(self.candidateAnswer[i])
+            if (score > best_dis or (score==best_dis and len(this_ans) < len(best_ans))):
                 best_dis = score
-                best_ans = ' '.join(self.candidateAnswer[i])
+                best_sen = nowSentence
+                best_ans = this_ans
+
         #print("### sentence is:")
         #print(best_candi)
         #print("### answer is:")
-        #print('------------')
+        print('++++++++++++++++++')
+        print(qst)
         print(best_dis)
+        print(best_sen)
         print(best_ans)
+        print('++++++++++++++++++')
 
 
          
@@ -339,7 +347,6 @@ class QA():
         print(extendList)
 
         for txt in extendList:
-            #print(txt)
             tree = self.sNLP.parser_sents([txt,])
             for i in tree:
                 self.dropTotal = 0
@@ -356,14 +363,17 @@ class QA():
         best_ans = None
         best_candi = None
 
+
         for i in range(len(self.candidateSentence)):
             nowSentence = self.candidateSentence[i]
 
             score = self.edit_distance(nowSentence, tokens)
             best_candi = ' '.join(nowSentence)
-            if (score < best_dis):
+            this_ans = ' '.join(self.candidateAnswer[i])
+            if (score < best_dis or (score==best_dis and len(this_ans) < len(best_ans))):
+            
                 best_dis = score
-                best_ans = ' '.join(self.candidateAnswer[i])
+                best_ans = this_ans
         return best_dis
 
 if __name__ == '__main__':

@@ -310,6 +310,10 @@ class QGPipeline:
     def getParseTree(self, text):
         # text = re.sub("\(.*\)", "", text)
         # text = re.sub("\\n", "", text)
+        text=text.replace('"', ' ')
+        text=text.replace("'", ' ')
+        text=text.replace("[", ' ')
+        text=text.replace("]", ' ')
         t = self.sNLP.parse(text)
         # print("Parse:", t)
         return (t)
@@ -329,8 +333,12 @@ class QGPipeline:
         simplified_sentences = []
         #print(t_list)
         for this in t_list:
-            #print(this)
+            #if len(this) < 1:
+            #    continue
             processed_text = " ".join(self.sent_simpl.traversalAndSimplification(this))
+            #print(processed_text)
+            if len(processed_text) < 1:
+                continue
             processed_text = processed_text.replace(",", "")
             processed_text = re.sub(' +', ' ', processed_text).strip()
             if processed_text[-1] != '.':
