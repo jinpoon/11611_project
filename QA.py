@@ -15,6 +15,8 @@ import copy
 from coreNLP_wrapper import StanfordNLP
 from QA_utils import *
 import pdb
+from fuzzywuzzy import fuzz
+from fuzzywuzzy import process
 
 #os.environ['CLASSPATH'] = '/Users/jovi/Desktop/CMU/NLP/project/stanford-corenlp-full-2018-02-27'
 #os.environ['STANFORD_PARSER'] = '/Users/jovi/Desktop/CMU/NLP/project/stanford-parser-full-2015-12-09/stanford-parser.jar'
@@ -42,27 +44,53 @@ class QA():
         self.qgPipeline = QGPipeline() 
 
     def initQstType(self):
-        self.typeSet=['what', 'who', 'which', 'where', 'when']
-        self.dropType['who'] = ['NP']
-        self.dropType['when'] = ['PP']
-        self.dropType['what'] = ['NP']
-        self.dropType['where'] = ['PP']
+        self.typeSet=['WHADJP', 'WHAVP', 'WHNP', 'WHPP', 'WHADVP']
+        self.dropType['WHADJP'] = ['NP', 'CD']
+        self.dropType['WHADVP'] = ['PP']
+        self.dropType['WHPP'] = ['PP']
+        self.dropType['WHNP'] = ['NP']
+        self.dropType['UK'] = ['NP', 'NN']
         self.auxWord = ['did','do','does', 'is', 'are','were','was']
         self.typePro['where'] = ['in', 'at', 'on', 'behind', 'next']
         self.typeNer['when'] = ['DATE']
         self.typeNer['where'] = ['CITY','STATE_OR_PROVINCE','ORGANIZATION', 'LOCATION','COUNTRY']
 
 
+    def decideType(self,myParent):
+        if self.qstFlag:
+            return
+        for node in myParent:
+            node.pretty_print()
+            if self.qstFlag:
+                return
+            if isinstance(node, str): continue
+            if node.label() in self.typeSet:
+                self.thisType = node.label()
+                myParent.remove(node)
+                self.qstFlag = True
+            self.decideType(node)
+            if node.label() == 'ROOT':
+                self.qstSim = node.leaves()
+                self.qstSim = ' '.join(self.qstSim[:-1])
+
     def qstType(self, qst):
-        tokens = self.sNLP.word_tokenize(qst)
-        #print(qst, tokens)
-        thisType = tokens[0].lower()
-        #print(thisType)
-    
-        if thisType not in self.typeSet: 
-            thisType = 'what'#'unknown'
-        elif thisType in self.auxWord: 
-            thisType = 'binary'
+        self.thisType = 'UK'
+        self.qstFlag = False
+        self.qstSim = None
+ 
+        
+
+        tree = self.sNLP.parser_sents([qst,])
+        for i in tree:
+            self.decideType(i)
+        if self.thisType == 'UK':
+            #print (self.thisType)
+            print('----')
+            print (self.qstSim)
+            print('----')
+        return
+
+
 
 
         nextWord = tokens[0]
@@ -86,7 +114,6 @@ class QA():
 
     def dropFragment(self,myParent,qstType):
         flag = 0
-        
         for node in myParent:
             if isinstance(node, str): continue
             if self.dropTime > self.dropTotal:
@@ -136,9 +163,74 @@ class QA():
         print(self.finalAnswer[0])
 
 
+    def answer(self, txtList, qst):
+        #print('--------')
+        #txtList = [txtList[1]]
+        #print(txtList)
+        #print('--------')
+        self.qstType(qst)
+        qstType = self.thisType
+        '''
+        if qstType in ['when', 'where']:
+            self.answerSpecial(txtList, tokens, qstType)
+            return
+        '''
+
+        self.candidateAnswer = []
+        self.candidateSentence = []
+
+        extendList = []
+
+        for thisSent in txtList:
+            extendList.append(thisSent)
+            thisParseTree = self.qgPipeline.getParseTree(thisSent)
+            no_conj_list = self.qgPipeline.splitConj(thisParseTree)            
+            simpl_sents = self.qgPipeline.simplify_sentence(no_conj_list)
+
+            for i in simpl_sents:
+                extendList.append(i)
+        #pdb.set_trace()
+
+        for txt in extendList:
+            #print(txt)
+            tree = self.sNLP.parser_sents([txt,])
+            for i in tree:
+                self.dropTotal = 0
+                self.dropFlag = 1
+                while self.dropFlag:
+                    self.findFlag = 0
+                    nowTree = copy.deepcopy(i)
+                    self.dropTime = 0
+                    nowTree = self.dropFragment(nowTree,qstType)
+                    if self.dropTime <= self.dropTotal:
+                        self.dropFlag = 0
+                    self.dropTotal += 1 
+
+
+        best_dis = 0
+        best_ans = None
+        best_candi = None
+
+        for i in range(len(self.candidateSentence)):
+            nowSentence = ' '.join(self.candidateSentence[i])
+            #print(nowSentence)
+            #print(self.qstSim)
+            score = fuzz.partial_ratio(self.qstSim, nowSentence)
+            #print(score)
+            #print('----------')
+            if (score > best_dis):
+                best_dis = score
+                best_ans = ' '.join(self.candidateAnswer[i])
+        #print("### sentence is:")
+        #print(best_candi)
+        #print("### answer is:")
+        #print('------------')
+        print(best_dis)
+        print(best_ans)
+
 
          
-
+    '''
     def answer(self, txtList, qst):
         #print('--------')
         #txtList = [txtList[1]]
@@ -156,7 +248,6 @@ class QA():
 
         for thisSent in txtList:
             extendList.append(thisSent)
-
             thisParseTree = self.qgPipeline.getParseTree(thisSent)
             no_conj_list = self.qgPipeline.splitConj(thisParseTree)            
             simpl_sents = self.qgPipeline.simplify_sentence(no_conj_list)
@@ -205,6 +296,7 @@ class QA():
         #print('------------')
         print(best_dis)
         print(best_ans)
+    '''
 
 
     def edit_distance(self, s1, s2):
