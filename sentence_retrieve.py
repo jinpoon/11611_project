@@ -10,45 +10,19 @@ from collections import defaultdict
 import math
 import pdb
 stemmer = SnowballStemmer("english", ignore_stopwords=False)
-from coreNLP_wrapper import StanfordNLP
-
-def sentence_simplifier(parent, result):
-   for node in parent:
-        if type(node) is ParentedTree:
-            if node.label() == ‘ROOT’:
-                pass
-            else:
-                if node.label() == “S”:
-                    if len(node.leaves()) > 6:
-                        if node.leaves()[-1] == “,”:
-                            leaves = node.leaves()[:-1]
-                            leaves.append(“.”)
-                            thisSentence = ” “.join(leaves)
-                        else:
-                            leaves = node.leaves()
-                            if leaves[-1] != “.”:
-                                leaves.append(“.”)
-                            thisSentence = ” “.join(leaves)
-                        result.append(thisSentence)
-            if node.parent() is not None:
-                sentence_simplifier(node, result)
 
 class SentencesRetriever():
 	
 	def __init__(self, article_filename):
 		self.sentence_list = []
 		self.lower2origin = {}
-		sNLP = StanfordNLP()
 		with io.open(article_filename, 'r', encoding='utf8') as f:
 			for line in f:
 				line = line.strip()
 				tmp_list = sent_tokenize(line)
-				for tmp_sentence in tmp_list:
-					result = []
-					sentence_simplifier(sNLP.parse(tmp_sentence), result)
-					for sentence in result:
-						self.lower2origin[sentence.lower()] = sentence
-						self.sentence_list.append(sentence.lower())
+				for sentence in tmp_list:
+					self.lower2origin[sentence.lower()] = sentence
+					self.sentence_list.append(sentence.lower())
 				#self.sentence_list += tmp_list
 
 	'''
