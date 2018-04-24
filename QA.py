@@ -42,8 +42,9 @@ class QA():
         self.threshold = 90
 
     def initQstType(self):
-        self.typeSet=['WHADJP', 'WHAVP', 'WHNP', 'WHPP', 'WHADVP']
+        self.typeSet=['WHADJP', 'WHADVP', 'WHPP', 'WHAVP', 'WHNP']
         self.dropType['WHADJP'] = ['NP', 'CD']
+        self.dropType['WHAVP'] = ['PP','SBAR']
         self.dropType['WHADVP'] = ['PP','SBAR']
         self.dropType['WHPP'] = ['PP']
         self.dropType['WHNP'] = ['NP']
@@ -105,50 +106,21 @@ class QA():
 
 
     def qstType(self, qst):
-
-     
         self.thisType = 'UK'
         self.qstFlag = False
         self.qstSim = None
-        #qst = "he went to the store, di?"
- 
-        
 
         tree = self.sNLP.parser_sents([qst,])
         for i in tree:
             self.decideType(i)
-        print(self.thisType)
  
-        if self.thisType == 'UK':
-            print (self.thisType)
-            print('----')
-            print (self.qstSim)
-            print('----')
-        return
-
-
-        nextWord = tokens[0]
-        backup = tokens
-        dropTimes = 0
-        while nextWord not in self.auxWord:
-            if dropTimes > 3 or dropTimes > len(backup) - 3:
-                break
-            tokens.pop(0)
-            nextWord = tokens[0]
-            dropTimes +=1
-        
-        if dropTimes > 3 or dropTimes > len(backup) - 3:
-            tokens = backup
-        tokens.pop(0)
-        tokens.pop(-1)
-
-        return thisType, tokens
+      
 
 
     def fitness(self, txt, qst):
         self.qstType(qst)
         if self.thisType == 'UK':
-            _, sim = self.bin_answer(qst,txtList[0])
+            _, sim = self.bin_answer(qst,txt)
             return sim
 
         qstType = self.thisType
@@ -254,20 +226,15 @@ class QA():
                 self.finalAnswer.append(sentence)
         print(self.finalAnswer[0])
 
+    def preProcessText(self, text):
+        data = re.sub("\(.*\)", "", text)
+        data = re.sub(' +', ' ', data).strip()
+        return data
 
     def answer(self, txtList, qst):
-        #print('=============')
-        print(qst)
-        for i in txtList:
-            print(i)
-            print(self.fitness(i,qst))
-        return
-
+       
         self.qstType(qst)
-        if self.thisType == 'UK':
-            ans, _ = self.bin_answer(qst,txtList[0])
-            print(ans)
-            return
+        #print(self.thisType)
 
         qstType = self.thisType
         self.candidateAnswer = []
@@ -276,8 +243,13 @@ class QA():
         extendList = []
 
         for thisSent in txtList:
+            thisSent = self.preProcessText(thisSent)
+            if (len(word_tokenize(thisSent))<4 or len(word_tokenize(thisSent))>25):
+                continue
+
             extendList.append(thisSent)
             thisParseTree = self.qgPipeline.getParseTree(thisSent)
+
             no_conj_list = self.qgPipeline.splitConj(thisParseTree)            
             simpl_sents = self.qgPipeline.simplify_sentence(no_conj_list)
 
@@ -316,8 +288,12 @@ class QA():
 
             this_ans = ' '.join(self.candidateAnswer[i])
             #print(this_ans, best_ans, score, best_dis)
+            if len(self.qstSim)<2: continue
+            if len(self.this_ans)<2: continue
             if (score >= best_dis ):
-                if score==best_dis and len(this_ans) >= len(best_ans):
+                if score==best_dis and len(this_ans) >= len(best_ans) and self.thisType in ['WHADVP', 'WHPP']:
+                    continue
+                if score==best_dis and len(this_ans) <= len(best_ans) and self.thisType in ['WHNP']:
                     continue
                 best_dis = score
                 best_sen = nowSentence
@@ -351,42 +327,6 @@ class QA():
             previous_row = current_row
         return previous_row[-1]
 
-
-    def give_socre(self, txtList, qst):
-        txtList = [txtList]
-        qstType, tokens = self.qstType(qst)
-        self.candidateAnswer = []
-        self.candidateSentence = []
-        extendList = []
-
-        for thisSent in txtList:
-            extendList.append(thisSent)
-
-            thisParseTree = self.qgPipeline.getParseTree(thisSent)
-            no_conj_list = self.qgPipeline.splitConj(thisParseTree)            
-            simpl_sents = self.qgPipeline.simplify_sentence(no_conj_list)
-
-
-            for i in simpl_sents:
-                extendList.append(i)
-        print(extendList)
-
-        for txt in extendList:
-            tree = self.sNLP.parser_sents([txt,])
-            for i in tree:
-                self.dropTotal = 0
-                self.dropFlag = 1
-                while self.dropFlag:
-                    self.findFlag = 0
-                    nowTree = copy.deepcopy(i)
-                    self.dropTime = 0
-                    nowTree = self.dropFragment(nowTree,qstType)
-                    if self.dropTime <= self.dropTotal:
-                        self.dropFlag = 0
-                    self.dropTotal += 1 
-        best_dis = 999999
-        best_ans = None
-        best_candi = None
 
 
         for i in range(len(self.candidateSentence)):

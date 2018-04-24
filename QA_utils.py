@@ -94,12 +94,13 @@ class Simplification:
     def traversalAndSimplification(self, parent):
         for node in parent:
             if type(node) is ParentedTree:
+                if node == None:
+                    continue
                 if node.label() == 'ROOT':
                     pass
                 else:
                     if node.label() in ("ADVP", "SBAR", "SBARQ"):
                         parent.remove(node)
-
                     elif node.label() == 'PP' and node.parent().label() == "VP" and node.left_sibling().label() == ',':
                         parent.remove(node)
                     elif node.parent().label() == 'NP' and node.left_sibling() is not None and node.right_sibling() is not None:
@@ -333,8 +334,8 @@ class QGPipeline:
         simplified_sentences = []
         #print(t_list)
         for this in t_list:
-            #if len(this) < 1:
-            #    continue
+            if len(this) < 3:
+                continue
             processed_text = " ".join(self.sent_simpl.traversalAndSimplification(this))
             #print(processed_text)
             if len(processed_text) < 1:

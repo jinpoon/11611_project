@@ -7,7 +7,7 @@ import os
 from Corefer import preprocess_coref
 
 if __name__ == '__main__':
-	sys.stderr = open('./temperr', 'w')
+	
 	filename = sys.argv[1]
 	coref_segm_filename = filename+".corf"
 	textlist = preprocess_coref(filename)
@@ -23,5 +23,6 @@ if __name__ == '__main__':
 			question = line.strip()
 			sl = retriever.retrieve_sentences(question)
 			#sl = retriever.sort_vectorized_sentences(model_file, sl, question)
+			#print(sl)
 			qa.answer(sl, question)
 	os.remove(coref_segm_filename)
