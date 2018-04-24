@@ -7,7 +7,7 @@ import os
 from Corefer import preprocess_coref
 
 if __name__ == '__main__':
-	
+	sys.stderr = open('./temperr', 'w')
 	filename = sys.argv[1]
 	coref_segm_filename = filename+".corf"
 	textlist = preprocess_coref(filename)

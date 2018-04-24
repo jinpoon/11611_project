@@ -29,9 +29,6 @@ eps = 1e-10
 
 
 
-
-
-
 class QA():
     def __init__(self):
         self.sNLP = StanfordNLP()
@@ -42,11 +39,12 @@ class QA():
         self.candidateAnswer = []
         self.candidateSentence = []
         self.qgPipeline = QGPipeline() 
+        self.threshold = 90
 
     def initQstType(self):
         self.typeSet=['WHADJP', 'WHAVP', 'WHNP', 'WHPP', 'WHADVP']
         self.dropType['WHADJP'] = ['NP', 'CD']
-        self.dropType['WHADVP'] = ['PP']
+        self.dropType['WHADVP'] = ['PP','SBAR']
         self.dropType['WHPP'] = ['PP']
         self.dropType['WHNP'] = ['NP']
         self.dropType['UK'] = ['NP', 'NN']
@@ -63,8 +61,11 @@ class QA():
             #node.pretty_print()
             if self.qstFlag:
                 return
+
             if isinstance(node, str): continue
+
             if node.label() in self.typeSet:
+
                 self.thisType = node.label()
                 myParent.remove(node)
                 self.qstFlag = True
@@ -73,24 +74,57 @@ class QA():
                 self.qstSim = node.leaves()
                 self.qstSim = ' '.join(self.qstSim[:-1])
 
+    
+    def bin_answer(self, question, sent):
+        bin_tags = set(["did", 'do', 'does', 'are', 'is', 'have', 'was',
+                    'were', 'has'])
+        question = question.lower()
+        sent = sent.lower()
+        q_tokens = word_tokenize(question)
+        s_tokens = word_tokenize(sent)
+        negations = set(['not', 'never', "aren't"])
+        ans = ''
+        # case 1: negations
+        for neg in negations:
+            if (neg in q_tokens) and (neg not in s_tokens):
+                if ans == "No": ans = "Yes"
+                else: ans = "No"
+            if (neg in q_tokens) and (neg in s_tokens):
+                if ans == "Yes": ans = "No"
+                else: ans = Yes
+
+
+        # case 2: similarity
+        sim = fuzz.token_sort_ratio(question, sent)
+        if sim > 90:
+            ans = "Yes"
+        else:
+            ans = "No"
+        return (ans,sim > self.threshold)
+
+
+
     def qstType(self, qst):
+
+     
         self.thisType = 'UK'
         self.qstFlag = False
         self.qstSim = None
+        #qst = "he went to the store, di?"
  
         
 
         tree = self.sNLP.parser_sents([qst,])
         for i in tree:
             self.decideType(i)
+        print(self.thisType)
+ 
         if self.thisType == 'UK':
-            #print (self.thisType)
+            print (self.thisType)
             print('----')
             print (self.qstSim)
             print('----')
         return
-
-
 
 
         nextWord = tokens[0]
@@ -109,6 +143,64 @@ class QA():
         tokens.pop(-1)
 
         return thisType, tokens
+
+
+    def fitness(self, txt, qst):
+        self.qstType(qst)
+        if self.thisType == 'UK':
+            _, sim = self.bin_answer(qst,txtList[0])
+            return sim
+
+        qstType = self.thisType
+        self.candidateAnswer = []
+        self.candidateSentence = []
+
+        extendList = []
+
+        for thisSent in [txt]:
+            extendList.append(thisSent)
+            thisParseTree = self.qgPipeline.getParseTree(thisSent)
+            no_conj_list = self.qgPipeline.splitConj(thisParseTree)            
+            simpl_sents = self.qgPipeline.simplify_sentence(no_conj_list)
+
+            for i in simpl_sents:
+                extendList.append(i)
+        #pdb.set_trace()
+
+        for txt in extendList:
+            #print(txt)
+            tree = self.sNLP.parser_sents([txt,])
+            for i in tree:
+                self.dropTotal = 0
+                self.dropFlag = 1
+                while self.dropFlag:
+                    self.findFlag = 0
+                    nowTree = copy.deepcopy(i)
+                    self.dropTime = 0
+                    nowTree = self.dropFragment(nowTree,qstType)
+                    if self.dropTime <= self.dropTotal:
+                        self.dropFlag = 0
+                    self.dropTotal += 1 
+
+
+        best_dis = 0
+        best_ans = None
+        best_candi = None
+        best_sen = None
+
+        for i in range(len(self.candidateSentence)):
+            nowSentence = ' '.join(self.candidateSentence[i])
+            score = fuzz.partial_ratio(self.qstSim, nowSentence)
+            this_ans = ' '.join(self.candidateAnswer[i])
+            if (score >= best_dis ):
+                if score==best_dis and len(this_ans) >= len(best_ans):
+                    continue
+                best_dis = score
+                best_sen = nowSentence
+                best_ans = this_ans
+
+        return self.threshold < best_dis
+
 
 
 
@@ -164,19 +256,20 @@ class QA():
 
 
     def answer(self, txtList, qst):
+        #print('=============')
+        print(qst)
+        for i in txtList:
+            print(i)
+            print(self.fitness(i,qst))
+        return
 
-        #print('--------')
-        #txtList = [txtList[1]]
-        #print(txtList)
-        #print('--------')
         self.qstType(qst)
-        qstType = self.thisType
-        '''
-        if qstType in ['when', 'where']:
-            self.answerSpecial(txtList, tokens, qstType)
+        if self.thisType == 'UK':
+            ans, _ = self.bin_answer(qst,txtList[0])
+            print(ans)
             return
-        '''
 
+        qstType = self.thisType
         self.candidateAnswer = []
         self.candidateSentence = []
 
@@ -220,15 +313,16 @@ class QA():
             score = fuzz.partial_ratio(self.qstSim, nowSentence)
             #print(score)
             #print('----------')
+
             this_ans = ' '.join(self.candidateAnswer[i])
-            if (score > best_dis or (score==best_dis and len(this_ans) < len(best_ans))):
+            #print(this_ans, best_ans, score, best_dis)
+            if (score >= best_dis ):
+                if score==best_dis and len(this_ans) >= len(best_ans):
+                    continue
                 best_dis = score
                 best_sen = nowSentence
                 best_ans = this_ans
 
-        #print("### sentence is:")
-        #print(best_candi)
-        #print("### answer is:")
         print('++++++++++++++++++')
         print(qst)
         print(best_dis)
@@ -236,75 +330,6 @@ class QA():
         print(best_ans)
         print('++++++++++++++++++')
 
-
-         
-    '''
-    def answer(self, txtList, qst):
-        #print('--------')
-        #txtList = [txtList[1]]
-        #print(txtList)
-        #print('--------')
-        qstType, tokens = self.qstType(qst)
-        if qstType in ['when', 'where']:
-            self.answerSpecial(txtList, tokens, qstType)
-            return
-
-        self.candidateAnswer = []
-        self.candidateSentence = []
-
-        extendList = []
-
-        for thisSent in txtList:
-            extendList.append(thisSent)
-            thisParseTree = self.qgPipeline.getParseTree(thisSent)
-            no_conj_list = self.qgPipeline.splitConj(thisParseTree)            
-            simpl_sents = self.qgPipeline.simplify_sentence(no_conj_list)
-
-            for i in simpl_sents:
-                extendList.append(i)
-        #pdb.set_trace()
-
-        for txt in extendList:
-            #print(txt)
-            tree = self.sNLP.parser_sents([txt,])
-            for i in tree:
-                self.dropTotal = 0
-                self.dropFlag = 1
-                while self.dropFlag:
-                    self.findFlag = 0
-                    nowTree = copy.deepcopy(i)
-                    self.dropTime = 0
-                    nowTree = self.dropFragment(nowTree,qstType)
-                    if self.dropTime <= self.dropTotal:
-                        self.dropFlag = 0
-                    self.dropTotal += 1 
-
-
-        best_dis = 999999
-        best_ans = None
-        best_candi = None
-
-        for i in range(len(self.candidateSentence)):
-            nowSentence = self.candidateSentence[i]
-
-            #nowSentence.pop(-1)
-            #print(nowSentence, tokens)
-            #print(' '.join(nowSentence))
-            score = self.edit_distance(nowSentence, tokens)
-            best_candi = ' '.join(nowSentence)
-
-            #print(score)
-            #print(best_candi)
-            if (score < best_dis):
-                best_dis = score
-                best_ans = ' '.join(self.candidateAnswer[i])
-        #print("### sentence is:")
-        #print(best_candi)
-        #print("### answer is:")
-        #print('------------')
-        print(best_dis)
-        print(best_ans)
-    '''
 
 
     def edit_distance(self, s1, s2):
