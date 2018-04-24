@@ -3,7 +3,7 @@ import nltk
 import sys
 import io
 from neuralcoref import Coref
-
+import string
 
 def preprocess_coref(filename):
 	textList = []
@@ -16,6 +16,7 @@ def preprocess_coref(filename):
 				continue
 			if len(orginal_sentence_list) == 1 and len(nltk.word_tokenize(orginal_sentence_list[0])) <= 4:
 				continue
+
 			paraL = []
 			paraL.append(orginal_sentence_list[0])
 			textList.append(orginal_sentence_list[0])
