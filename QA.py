@@ -274,7 +274,7 @@ class QA():
 
 
         best_dis = 0
-        best_ans = None
+        best_ans = '_'
         best_candi = None
         best_sen = None
 
@@ -288,8 +288,8 @@ class QA():
 
             this_ans = ' '.join(self.candidateAnswer[i])
             #print(this_ans, best_ans, score, best_dis)
-            if len(self.qstSim)<2: continue
-            if len(self.this_ans)<2: continue
+            if self.qstSim==None: continue
+            if this_ans==None: continue
             if (score >= best_dis ):
                 if score==best_dis and len(this_ans) >= len(best_ans) and self.thisType in ['WHADVP', 'WHPP']:
                     continue
