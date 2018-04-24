@@ -77,6 +77,8 @@ class QA():
 
     
     def bin_answer(self, question, sent):
+
+
         bin_tags = set(["did", 'do', 'does', 'are', 'is', 'have', 'was',
                     'were', 'has'])
         question = question.lower()
@@ -92,16 +94,19 @@ class QA():
                 else: ans = "No"
             if (neg in q_tokens) and (neg in s_tokens):
                 if ans == "Yes": ans = "No"
-                else: ans = Yes
+                else: ans = "Yes"
 
 
         # case 2: similarity
-        sim = fuzz.token_sort_ratio(question, sent)
+        sim = fuzz.partial_ratio(question, sent)
         if sim > 90:
             ans = "Yes"
         else:
             ans = "No"
-        return (ans,sim > self.threshold)
+        #print(question, sent, sim)
+
+
+        return (ans,sim )
 
 
 
@@ -113,7 +118,6 @@ class QA():
         tree = self.sNLP.parser_sents([qst,])
         for i in tree:
             self.decideType(i)
-        print(self.thisType)
  
       
 
@@ -235,10 +239,22 @@ class QA():
     def answer(self, txtList, qst):
        
         self.qstType(qst)
-        self.qstType(qst)
+        print(self.thisType)
         if self.thisType == 'UK':
-            ans, sim = self.bin_answer(qst,txt)
+            best_score = 0
+            best_ans   = 'Yes'
+            best_sent  = '_'
+            for txt in txtList:
+                ans, sim = self.bin_answer(qst,txt)
+                if sim > best_score:
+                    best_ans = ans
+                    best_score = sim
+                    best_sent = txt
+            print('=======')
+            print(txt)
+            print(qst)
             print(ans)
+            print('=======')
             return
         #print(self.thisType)
 
