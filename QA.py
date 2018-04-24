@@ -109,6 +109,13 @@ class QA():
         tree = self.sNLP.parser_sents([qst, ])
         for i in tree:
             self.decideType(i)
+<<<<<<< HEAD
+        print(self.thisType)
+ 
+      
+
+=======
+>>>>>>> 90a7d73a7620e787ed2b0067d2504ddd436a8ed6
 
     def fitness(self, txt, qst):
         self.qstType(qst)
@@ -220,7 +227,16 @@ class QA():
     def answer(self, txtList, qst):
 
         self.qstType(qst)
+<<<<<<< HEAD
+        self.qstType(qst)
+        if self.thisType == 'UK':
+            ans, sim = self.bin_answer(qst,txt)
+            print(ans)
+            return
+        #print(self.thisType)
+=======
         # print(self.thisType)
+>>>>>>> 90a7d73a7620e787ed2b0067d2504ddd436a8ed6
 
         qstType = self.thisType
         self.candidateAnswer = []
