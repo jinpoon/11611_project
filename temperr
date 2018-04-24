@@ -1,0 +1,8 @@
+Traceback (most recent call last):
+  File "answer.py", line 19, in <module>
+    retriever = SentencesRetriever(coref_segm_filename)
+  File "/Users/jovi/Desktop/CMU/NLP/11611_project/sentence_retrieve.py", line 48, in __init__
+    sentence_simplifier(sNLP.parse(tmp_sentence), result)
+  File "/Users/jovi/Desktop/CMU/NLP/11611_project/sentence_retrieve.py", line 17, in sentence_simplifier
+    if type(node) is ParentedTree:
+NameError: name 'ParentedTree' is not defined

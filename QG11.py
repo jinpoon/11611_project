@@ -386,16 +386,6 @@ class TextManipulator():
         self.sentence_list = []
         # self.getSentenceList(self.textData)
         self.tokenizePara(self.textData)
-    # def beWork(self, sentence):
-    #     # pos = nltk.pos_tag(sentence)
-    #     for i in range(len(sentence) - 1):
-    #         if sentence[i] in self.beWord:
-    #             j = i
-    #             break
-    #     temp = sentence[j]
-    #     sentence.pop(j)
-    #     sentence.insert(0, temp)
-    #     # print(sentence)
 
     def preProcessText(self, text):
         data = re.sub("\(.*\)", "", text)

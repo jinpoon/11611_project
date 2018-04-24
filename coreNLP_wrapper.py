@@ -12,23 +12,23 @@ import string
 import nltk
 import sys
 import copy
-
+'''
 os.environ['CLASSPATH'] = '/home/syntaxsentinels/dry_run/121005/stanford-corenlp-full-2018-02-27'
 os.environ['STANFORD_PARSER'] = '/home/syntaxsentinels/dry_run/121005/stanford-parser-full-2015-12-09/stanford-parser.jar'
 os.environ['STANFORD_MODELS'] = '/home/syntaxsentinels/dry_run/121005/stanford-parser-full-2015-12-09/stanford-parser-3.6.0-models.jar'
 
-'''
+
 os.environ['CLASSPATH'] = '/Users/jovi/Desktop/CMU/NLP/project/stanford-corenlp-full-2018-02-27'
 os.environ['STANFORD_PARSER'] = '/Users/jovi/Desktop/CMU/NLP/project/stanford-parser-full-2015-12-09/stanford-parser.jar'
 os.environ['STANFORD_MODELS'] = '/Users/jovi/Desktop/CMU/NLP/project/stanford-parser-full-2015-12-09/stanford-parser-3.6.0-models.jar'
 '''
-'''
+
 os.environ['CLASSPATH'] = '/Users/annamalaisenthilnathan/Desktop/NLP/11611_project-master/jars'
 os.environ['STANFORD_MODELS'] = '/Users/annamalaisenthilnathan/Desktop/NLP/11611_project-master/models'
-'''
+
 
 class StanfordNLP:
-    def __init__(self, host='http://nlp02.lti.cs.cmu.edu', port=9000):
+    def __init__(self, host='http://localhost', port=9000):
         self.nlp = StanfordCoreNLP(host, port=port,
                                    timeout=30000)  # , quiet=False, logging_level=logging.DEBUG)
 
