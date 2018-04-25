@@ -78,12 +78,15 @@ class QA():
 
     def parseDep(self, x):
         a = x[0][0].lower()
+        a = WordNetLemmatizer().lemmatize(a)
         b = x[2][0].lower()
+        b = WordNetLemmatizer().lemmatize(b)
         return (a,b)
 
 
     
     def bin_answer(self, question, sent):
+        print(question, sent)
 
         qstTree = self.sNLP.dependency_parse(question)
         qstTree = qstTree.__next__()
@@ -192,16 +195,23 @@ class QA():
 
 
         best_dis = 0
-        best_ans = None
+        best_ans = '_'
         best_candi = None
         best_sen = None
+
+
 
         for i in range(len(self.candidateSentence)):
             nowSentence = ' '.join(self.candidateSentence[i])
             score = fuzz.partial_ratio(self.qstSim, nowSentence)
             this_ans = ' '.join(self.candidateAnswer[i])
+            #print(this_ans, best_ans, score, best_dis)
+            if self.qstSim==None: continue
+            if this_ans==None: continue
             if (score >= best_dis ):
-                if score==best_dis and len(this_ans) >= len(best_ans):
+                if score==best_dis and len(this_ans) >= len(best_ans) and self.thisType in ['WHADVP', 'WHPP']:
+                    continue
+                if score==best_dis and len(this_ans) <= len(best_ans) and self.thisType in ['WHNP']:
                     continue
                 best_dis = score
                 best_sen = nowSentence
