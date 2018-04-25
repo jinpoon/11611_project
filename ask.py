@@ -29,9 +29,9 @@ if __name__ == '__main__':
 	# 				sentenceList.append(sentence)
 
 	sentenceList = preprocess_coref(filename)
-	qsList = askMe(sentenceList, n)
+	qsList = askMe(sentenceList)
 	minlen = min(len(qsList), n)
-	qsList = qsList[:]
+	qsList = qsList[:minlen]
 	for i in qsList:
-		print(i[1])
+		print(i[1][1])
 		
