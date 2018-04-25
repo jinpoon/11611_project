@@ -17,6 +17,7 @@ from QA_utils import *
 import pdb
 from fuzzywuzzy import fuzz
 from fuzzywuzzy import process
+from nltk.stem.wordnet import WordNetLemmatizer
 
 #os.environ['CLASSPATH'] = '/Users/jovi/Desktop/CMU/NLP/project/stanford-corenlp-full-2018-02-27'
 #os.environ['STANFORD_PARSER'] = '/Users/jovi/Desktop/CMU/NLP/project/stanford-parser-full-2015-12-09/stanford-parser.jar'
@@ -75,8 +76,44 @@ class QA():
                 self.qstSim = node.leaves()
                 self.qstSim = ' '.join(self.qstSim[:-1])
 
+    def parseDep(self, x):
+        a = x[0][0].lower()
+        b = x[2][0].lower()
+        return (a,b)
+
+
     
     def bin_answer(self, question, sent):
+
+        qstTree = self.sNLP.dependency_parse(question)
+        qstTree = qstTree.__next__()
+        qstTree = list(qstTree.triples())
+        sentTree = self.sNLP.dependency_parse(sent)
+        sentTree = sentTree.__next__()
+        sentTree = list(sentTree.triples())
+        qstSub  = []
+        sentSub = []
+        flag    = False
+        neg = False
+        for x in qstTree:
+            #print(x)
+            if x[1] == 'nsubj':
+                qstSub.append(self.parseDep(x)) 
+            if x[1] == 'neg':
+                neg = True
+        for x in sentTree:
+            if x[1] == 'nsubj':
+                sentSub.append(self.parseDep(x))
+                if self.parseDep(x) in qstSub:
+                    flag = True
+        print(qstSub)
+        print(sentSub)
+            
+        if flag:
+            if neg:
+                return ('No',100)
+            else:
+                return ('Yes',100)
 
 
         bin_tags = set(["did", 'do', 'does', 'are', 'is', 'have', 'was',
@@ -95,17 +132,12 @@ class QA():
             if (neg in q_tokens) and (neg in s_tokens):
                 if ans == "Yes": ans = "No"
                 else: ans = "Yes"
-
-
         # case 2: similarity
         sim = fuzz.partial_ratio(question, sent)
         if sim > 90:
             ans = "Yes"
         else:
             ans = "No"
-        #print(question, sent, sim)
-
-
         return (ans,sim )
 
 
@@ -126,8 +158,7 @@ class QA():
         self.qstType(qst)
         if self.thisType == 'UK':
             _, sim = self.bin_answer(qst,txt)
-            return sim
-
+            return sim > self.threshold
         qstType = self.thisType
         self.candidateAnswer = []
         self.candidateSentence = []
@@ -224,8 +255,6 @@ class QA():
             sentence = ' '.join(i[0])
             pos_tag = self.sNLP.ner(sentence)
             print(pos_tag)
-            #if pos_tag[0][0].lower() not in self.typePro[qstType]:
-            #    continue
             if pos_tag[1][1] in self.typeNer[qstType]:
                 #print(pos_tag)
                 self.finalAnswer.append(sentence)
@@ -237,10 +266,17 @@ class QA():
         return data
 
     def answer(self, txtList, qst):
-       
+
+        
+
+
+
         self.qstType(qst)
-        print(self.thisType)
         if self.thisType == 'UK':
+
+
+
+
             best_score = 0
             best_ans   = 'Yes'
             best_sent  = '_'
@@ -251,12 +287,12 @@ class QA():
                     best_score = sim
                     best_sent = txt
             print('=======')
-            print(txt)
+            print(best_sent)
             print(qst)
-            print(ans)
+            print(best_ans)
+            print(best_score)
             print('=======')
             return
-        #print(self.thisType)
 
         qstType = self.thisType
         self.candidateAnswer = []
