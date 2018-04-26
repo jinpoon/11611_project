@@ -39,32 +39,6 @@ def categorizeQs(sents, sent_to_Q_dict):
     normal_ners = sNLP.ner(sents)
     normal_ner_set = {t[1] for t in normal_ners}
 
-    # word_syns_NER_dict = {}
-    # for word in word_tokenize(sents):
-    #     synonyms = []
-    #     for syn in wn.synsets(word):
-    #         for l in syn.lemmas():
-    #             synonyms.append(l.name())
-    #     word_syns_NER_dict[word] = synonyms
-    # # print(word_syns_NER_dict)
-    # for word, values in word_syns_NER_dict.items():
-    #     b = {sNLP.ner(s)[0][1] for s in values}
-    #     word_syns_NER_dict[word] = b
-    #
-    # # print(word_syns_NER_dict)
-    #
-    # for thisWordTag in sNLP.ner(sents):
-    #     # print(thisWordTag)
-    #     if thisWordTag[0] in word_syns_NER_dict:
-    #         word_syns_NER_dict[thisWordTag[0]].add(thisWordTag[1])
-    #
-    # set_final_NERs = set()
-    # for s in word_syns_NER_dict.values():
-    #     set_final_NERs.update(s)
-    #
-    # sent_features[sents] = (set_final_NERs, word_syns_NER_dict)
-    # ans_type_dict["What"].add(sents)
-
     aux_Flag = max([1 if w in sents else 0 for w in aux_words])
     # print(aux_Flag)
     if aux_Flag == 1:
@@ -95,12 +69,7 @@ def categorizeQs(sents, sent_to_Q_dict):
         thisQ = When_QG.When_module(sents,sent_features)
         if thisQ is not None:
             sent_to_Q_dict["When"].append((sents,thisQ))
-    # if 'ORDINAL' in set_final_NERs:
-    #     pass
-    # if 'PERSON' in set_final_NERs:
-    #     ans_type_dict["Who"].add(sents)
-    # if 'NUMBER' in set_final_NERs:
-    #     ans_type_dict["How"].add(sents)
+
 
 def SentToQuesBuckets(sent_list):
     sent_to_Q_dict = {}
@@ -130,7 +99,6 @@ def SentToQuesBuckets(sent_list):
 
 
 def askMe(sents):
-    qa = QA()
 
     final_sents = sents[:]
     # print(final_sents)
@@ -167,5 +135,5 @@ def askMe(sents):
     #
     # print("+++++++++++++++++++++++++ Answering Interface ++++++++++++++++++++++++++++++++++")
 
-    return evaluations[:]
+    return evaluations
 

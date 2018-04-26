@@ -17,6 +17,7 @@ import string
 from nltk.corpus import wordnet as wn
 from nltk.stem import *
 from nltk.stem.wordnet import WordNetLemmatizer
+from What_Who_QG import getDecapitalized
 
 def getNerSet(phrase):
     sNLP = StanfordNLP()
@@ -46,7 +47,7 @@ def construct_when(ques, dep_tree):
     if auxVerb is not None and auxMStr is not None:
         que = ques.replace(auxMStr, mVerb)
         # print(que)
-        que = ("When "+ auxVerb + " " + que)
+        que = ("When "+ auxVerb + " " + getDecapitalized(que))
     else:
         tenseVerb = ""
         stemVerb = mVerb
@@ -57,7 +58,7 @@ def construct_when(ques, dep_tree):
         stemVerb = WordNetLemmatizer().lemmatize(mVerb,'v')
 
         que = ques.replace(mVerb, stemVerb)
-        que = ("When " + tenseVerb +" "+ que)
+        que = ("When " + tenseVerb +" "+ getDecapitalized(que))
         # print("que", que)
     que_tokens = word_tokenize(que)
     if que_tokens[-1] == "." or que_tokens[-1] == ",":

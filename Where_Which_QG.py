@@ -18,6 +18,8 @@ from nltk.corpus import wordnet as wn
 from nltk.stem import *
 from nltk.stem.wordnet import WordNetLemmatizer
 import random
+from What_Who_QG import getDecapitalized
+
 
 def getNerSet(phrase):
     sNLP = StanfordNLP()
@@ -58,9 +60,9 @@ def construct_where_which(ques, dep_tree, case, type):
         que = ques.replace(auxMStr, mVerb)
         # print(que)
         if random.random() < 0.5:
-            que = (thisCase+" which "+type +" "+ auxVerb + " " + que)
+            que = (thisCase+" which "+type +" "+ auxVerb + " " + getDecapitalized(que))
         else:
-            que = ("Where" + " " + auxVerb + " " + que)
+            que = ("Where" + " " + auxVerb + " " + getDecapitalized(que))
     else:
         tenseVerb = ""
         stemVerb = mVerb
@@ -74,9 +76,9 @@ def construct_where_which(ques, dep_tree, case, type):
 
         que = ques.replace(mVerb, stemVerb)
         if random.random() < 0.5:
-            que = (thisCase+" which "+ type +" "+ tenseVerb +" "+ que)
+            que = (thisCase+" which "+ type +" "+ tenseVerb +" "+ getDecapitalized(que))
         else:
-            que = ("Where" +" "+ tenseVerb +" "+ que)
+            que = ("Where" +" "+ tenseVerb +" "+ getDecapitalized(que))
 
     # print("que", que)
     que_tokens = word_tokenize(que)

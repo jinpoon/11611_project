@@ -42,6 +42,16 @@ from textblob import Word as wd
 
 sNLP = StanfordNLP()
 
+def getDecapitalized(sentence):
+    tokens = sNLP.word_tokenize(sentence)
+    first = tokens[0]
+    # print(first)
+    thisNER = sNLP.ner(sentence)
+    # print(thisNER)
+    if thisNER[0][1] not in ['PERSON', 'LOCATION', 'ORGANIZATION', 'CITY', 'NATIONALITY', 'COUNTRY', 'TIME']:
+        first = first.lower()
+    return first+" "+" ".join(tokens[1:])
+
 def findSubj(dep_list):
     for this in  dep_list:
         if this[1] in ["nsubj", "nsubjpass", "csubj"]:
@@ -144,15 +154,17 @@ def construct_What(question, pos, parent_pos, parent_ner, parent_dep_tree, thisN
     if pos[0][1] in ["VBD", "VBZ", "NNS", "VBP", "NNP"]:
         # print(full_NP_ners)
         if any(x in lower_NP_tokens for x in prps) or "PERSON" in full_NP_ners or "PERSON" == subj_ner:
-            return_Str += "Who "+question
+            return_Str += "Who "+getDecapitalized(question)
         else:
-            return_Str += "What "+question
+            return_Str += "What "+getDecapitalized(question)
 
     elif pos[0][1] in ["VB"]:
-        tokens = word_tokenize(question)
+        tokens = word_tokenize(getDecapitalized(question))
         # print(tokens,"YOYOYO")
         verb = wd(tokens[0]).pluralize()+" "
         # print(full_NP_ners)
+        if verb == "haves": verb = "have"
+
         if any(x in lower_NP_tokens for x in prps) or "PERSON" in full_NP_ners or "PERSON" == subj_ner:
             return_Str += "Who " + verb + " ".join(tokens[1:])
         else:
@@ -161,9 +173,9 @@ def construct_What(question, pos, parent_pos, parent_ner, parent_dep_tree, thisN
     elif pos[0][1] in ["VBN", "VBG"]:
         # print(full_NP_ners)
         if any(x in lower_NP_tokens for x in prps) or "PERSON" in full_NP_ners or "PERSON" == subj_ner:
-            return_Str += "Who " + question
+            return_Str += "Who " + getDecapitalized(question)
         else:
-            return_Str += "What is " + question
+            return_Str += "What is " + getDecapitalized(question)
 
 
     if return_Str != "":
