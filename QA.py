@@ -81,7 +81,7 @@ class QA():
         return (a, b)
 
     def bin_answer(self, question, sent):
-        print(question, sent)
+        #print(question, sent)
 
         qstTree = self.sNLP.dependency_parse(question)
         qstTree = qstTree.__next__()
@@ -105,8 +105,8 @@ class QA():
                 sentSub.append(self.parseDep(x))
                 if self.parseDep(x) in qstSub:
                     flag = True
-        print(qstSub)
-        print(sentSub)
+        #print(qstSub)
+        #print(sentSub)
 
         if flag:
             if neg:
@@ -274,12 +274,12 @@ class QA():
                     best_ans = ans
                     best_score = sim
                     best_sent = txt
-            print('=======')
-            print(best_sent)
-            print(qst)
+            #print('=======')
+            #print(best_sent)
+            #print(qst)
             print(best_ans)
-            print(best_score)
-            print('=======')
+            #print(best_score)
+            #print('=======')
             return
 
         qstType = self.thisType
@@ -344,12 +344,12 @@ class QA():
                 best_sen = nowSentence
                 best_ans = this_ans
 
-        print('++++++++++++++++++')
-        print(qst)
-        print(best_dis)
-        print(best_sen)
+        #print('++++++++++++++++++')
+        #print(qst)
+        #print(best_dis)
+        #print(best_sen)
         print(best_ans)
-        print('++++++++++++++++++')
+        #print('++++++++++++++++++')
 
     def edit_distance(self, s1, s2):
         if len(s1) < len(s2):
