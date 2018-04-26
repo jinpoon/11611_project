@@ -1,7 +1,9 @@
+import sys
+sys.stdout = open('temp', 'w')
 from sentence_retrieve import SentencesRetriever
 import __future__
 from QA import *
-import sys
+
 import io
 import os
 from Corefer import preprocess_coref
@@ -17,6 +19,7 @@ if __name__ == '__main__':
     questionfile = sys.argv[2]
     model_file = 'words.txt.model'
     retriever = SentencesRetriever(coref_segm_filename)
+    sys.stdout = sys.__stdout__
     qa = QA()
     with io.open(questionfile, 'r', encoding='utf8') as f:
         for line in f:
