@@ -18,7 +18,7 @@ import pdb
 from fuzzywuzzy import fuzz
 from fuzzywuzzy import process
 from nltk.stem.wordnet import WordNetLemmatizer
-
+from What_Who_QG import *
 # os.environ['CLASSPATH'] = '/Users/jovi/Desktop/CMU/NLP/project/stanford-corenlp-full-2018-02-27'
 # os.environ['STANFORD_PARSER'] = '/Users/jovi/Desktop/CMU/NLP/project/stanford-parser-full-2015-12-09/stanford-parser.jar'
 # os.environ['STANFORD_MODELS'] = '/Users/jovi/Desktop/CMU/NLP/project/stanford-parser-full-2015-12-09/stanford-parser-3.6.0-models.jar'
@@ -58,7 +58,7 @@ class QA():
         if self.qstFlag:
             return
         for node in myParent:
-            # node.pretty_print()
+            #node.pretty_print()
             if self.qstFlag:
                 return
 
@@ -261,6 +261,8 @@ class QA():
         return data
 
     def answer(self, txtList, qst):
+        self.head = word_tokenize(qst)[0].lower()
+
 
         self.qstType(qst)
         if self.thisType == 'UK':
@@ -277,7 +279,7 @@ class QA():
             #print('=======')
             #print(best_sent)
             #print(qst)
-            print(best_ans)
+            print(best_ans+'.')
             #print(best_score)
             #print('=======')
             return
@@ -319,9 +321,9 @@ class QA():
                     self.dropTotal += 1
 
         best_dis = 0
-        best_ans = '_'
         best_candi = None
         best_sen = None
+        best_ans = '_'
 
         for i in range(len(self.candidateSentence)):
             nowSentence = ' '.join(self.candidateSentence[i])
@@ -340,7 +342,30 @@ class QA():
                     continue
                 if score == best_dis and len(this_ans) <= len(best_ans) and self.thisType in ['WHNP']:
                     continue
+                if self.head=='who':
+                    ners = getExhaustiveNERs(this_ans)
+                    #print(this_ans, ners[0])
+                    if  'PERSON' not in ners[0] and 'ORGANIZATION' not in ners[0]: 
+                        if score - best_dis < 10:
+                            continue
+                        else:
+                            score = score - 10
+                if self.head=='when':
+                    ners = getExhaustiveNERs(this_ans)
+                    if 'DATE' not in ners[0]: 
+                        if score - best_dis < 10:
+                            continue
+                        else:
+                            score = score - 10
+                if self.head=='where':
+                    ners = getExhaustiveNERs(this_ans)
+                    if 'LOCATION' not in ners[0] and 'CITY' not in ners[0] and 'ORGANIZATION' not in ners[0] and 'STATE_OR_PROVINCE' not in ners[0] and 'COUNTRY' not in ners[0]: 
+                        if score - best_dis < 10:
+                            continue
+                        else:
+                            score = score - 10
                 best_dis = score
+
                 best_sen = nowSentence
                 best_ans = this_ans
 
@@ -348,7 +373,10 @@ class QA():
         #print(qst)
         #print(best_dis)
         #print(best_sen)
-        print(best_ans)
+        if best_ans == '_':
+            print('I cannot answer that question: '+qst)
+        else :
+            print(best_ans.capitalize()+'.')
         #print('++++++++++++++++++')
 
     def edit_distance(self, s1, s2):
